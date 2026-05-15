@@ -9,7 +9,7 @@ Campos principales:
 - `claseBase` y `piBase`: clase y PI del coche/build desde el que partes.
 - `motor`: posición del motor (`Delantero`, `Central` o `Trasero`).
 - `aspiracion`: tipo de entrega de potencia (`Atmosférico`, `Turbo`, `Biturbo`, `Sobrealimentado` o `Eléctrico`).
-- `potenciaCv` y `parNm`: potencia y par actuales del build.
+- `potenciaKw`, `potenciaCv` y `parNm`: potencia en kW leída en Forza Horizon 6, potencia en CV calculada por la app y par actual del build en N·m.
 - `pesoKg`: peso actual.
 - `repartoPesoDelantero`: porcentaje de peso delante. La app calcula el trasero automáticamente.
 - `cilindradaL`: cilindrada en litros.
@@ -31,12 +31,13 @@ coche('Marca Modelo Año', 'RWD', 'Nota corta visible en el resumen.', {
   piBase: 700,
   motor: 'Delantero',
   aspiracion: 'Turbo',
-  potenciaCv: 350,
+  potenciaKw: 257,
+  potenciaCv: 349,
   parNm: 450,
   pesoKg: 1400,
   repartoPesoDelantero: 52,
   cilindradaL: 2.0,
-  neumaticos: 'Sport',
+  neumaticos: 'Deportivos',
   anchoDelanteroMm: 245,
   anchoTraseroMm: 265,
   traccionOriginal: 'RWD',
@@ -62,7 +63,7 @@ coche('Marca Modelo Año', 'RWD', 'Nota corta visible en el resumen.', {
 ## Cómo usa la app esos datos
 
 - El peso, reparto y uso seleccionado influyen en muelles, altura, barras y frenada.
-- La potencia, el par por tonelada y la tracción influyen en presiones, diferencial y transmisión final.
+- La potencia en kW se convierte a CV para relación peso/potencia; esa potencia derivada, el par por tonelada y la tracción influyen en presiones, diferencial y transmisión final.
 - El compuesto y ancho de neumático ayudan a decidir presiones más conservadoras o agresivas.
 - La clase objetivo y el uso influyen en aero, altura y prioridad de estabilidad.
 - `piezasAjustables` decide si la UI avisa de que un reglaje puede estar bloqueado.

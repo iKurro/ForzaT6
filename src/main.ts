@@ -5,7 +5,7 @@ type Seccion = 'Neumáticos' | 'Relación de marchas' | 'Alineamiento' | 'Barras
 type Traccion = 'RWD' | 'AWD' | 'FWD';
 type TipoMotor = 'Delantero' | 'Central' | 'Trasero';
 type Aspiracion = 'Atmosférico' | 'Turbo' | 'Biturbo' | 'Sobrealimentado' | 'Eléctrico';
-type CompuestoNeumatico = 'Stock' | 'Street' | 'Sport' | 'Semi-slick' | 'Slick' | 'Rally' | 'Drag';
+type CompuestoNeumatico = 'Serie' | 'Calle' | 'Deportivos' | 'Competición semilisos' | 'Competición lisos' | 'Derrape' | 'Rally' | 'Todoterreno' | 'Nieve' | 'Aceleración';
 type Vista = 'principal' | 'gestionar';
 
 interface PiezasAjustables {
@@ -23,6 +23,7 @@ interface FichaTecnica {
   piBase: number;
   motor: TipoMotor;
   aspiracion: Aspiracion;
+  potenciaKw: number;
   potenciaCv: number;
   parNm: number;
   pesoKg: number;
@@ -53,7 +54,20 @@ const secciones: Seccion[] = ['Neumáticos', 'Relación de marchas', 'Alineamien
 const tracciones: Traccion[] = ['FWD', 'RWD', 'AWD'];
 const motores: TipoMotor[] = ['Delantero', 'Central', 'Trasero'];
 const aspiraciones: Aspiracion[] = ['Atmosférico', 'Turbo', 'Biturbo', 'Sobrealimentado', 'Eléctrico'];
-const compuestos: CompuestoNeumatico[] = ['Stock', 'Street', 'Sport', 'Semi-slick', 'Slick', 'Rally', 'Drag'];
+const compuestos: CompuestoNeumatico[] = ['Serie', 'Calle', 'Deportivos', 'Competición semilisos', 'Competición lisos', 'Derrape', 'Rally', 'Todoterreno', 'Nieve', 'Aceleración'];
+const CV_POR_KW = 1.35962;
+const compuestosLegacy: Record<string, CompuestoNeumatico> = {
+  Stock: 'Serie',
+  Street: 'Calle',
+  Sport: 'Deportivos',
+  'Semi-slick': 'Competición semilisos',
+  Slick: 'Competición lisos',
+  Drift: 'Derrape',
+  Rally: 'Rally',
+  Offroad: 'Todoterreno',
+  Snow: 'Nieve',
+  Drag: 'Aceleración',
+};
 const piezasLabels: Record<keyof PiezasAjustables, string> = {
   cajaCompleta: 'Caja completa',
   suspension: 'Suspensión',
@@ -138,6 +152,14 @@ function persistirFavoritas() { localStorage.setItem(FAVORITES_KEY, JSON.stringi
 function persistirCoches() { localStorage.setItem(CARS_KEY, JSON.stringify(coches)); }
 function cocheActual() { return coches.find((c) => c.id === estado.cocheId); }
 function formato(num: number, decimales = 1) { return Number.isFinite(num) ? num.toFixed(decimales).replace('.', ',') : '0'; }
+function redondear(num: number, decimales = 0) { const factor = 10 ** decimales; return Math.round(num * factor) / factor; }
+function kwACv(kw: number) { return kw * CV_POR_KW; }
+function cvAKw(cv: number) { return cv / CV_POR_KW; }
+function potenciaTexto(f: FichaTecnica) { return `${Math.round(f.potenciaKw)} kW / ${Math.round(f.potenciaCv)} CV`; }
+function normalizarCompuesto(value: unknown): CompuestoNeumatico | undefined {
+  if (!incluye(compuestos, value)) return typeof value === 'string' ? compuestosLegacy[value] : undefined;
+  return value;
+}
 function clamp(num: number, min: number, max: number) { return Math.min(max, Math.max(min, num)); }
 function relacionPesoPotencia(c: Coche) { return c.ficha.pesoKg / Math.max(1, c.ficha.potenciaCv); }
 function parPorTonelada(c: Coche) { return c.ficha.parNm / Math.max(0.1, c.ficha.pesoKg / 1000); }
@@ -157,7 +179,11 @@ function normalizarCoche(value: unknown): Coche | null {
   const piezas = ficha?.piezasAjustables as Partial<PiezasAjustables> | undefined;
   if (!raw || !ficha) return null;
   const nombre = texto(raw.nombre);
-  const potenciaCv = num(ficha.potenciaCv, 1, 3000);
+  const potenciaKwEntrada = num(ficha.potenciaKw, 1, 2500);
+  const potenciaCvEntrada = num(ficha.potenciaCv, 1, 3000);
+  const potenciaKw = potenciaKwEntrada ?? (potenciaCvEntrada !== undefined ? redondear(cvAKw(potenciaCvEntrada)) : undefined);
+  const potenciaCv = potenciaKw !== undefined ? redondear(kwACv(potenciaKw)) : undefined;
+  const neumaticos = normalizarCompuesto(ficha.neumaticos);
   const parNm = num(ficha.parNm, 1, 5000);
   const pesoKg = num(ficha.pesoKg, 100, 5000);
   const piBase = num(ficha.piBase, 0, 999);
@@ -166,7 +192,7 @@ function normalizarCoche(value: unknown): Coche | null {
   const anchoDelanteroMm = num(ficha.anchoDelanteroMm, 100, 600);
   const anchoTraseroMm = num(ficha.anchoTraseroMm, 100, 600);
   const marchas = num(ficha.marchas, 1, 10);
-  if (!nombre || !incluye(clases, ficha.claseBase) || piBase === undefined || !incluye(motores, ficha.motor) || !incluye(aspiraciones, ficha.aspiracion) || potenciaCv === undefined || parNm === undefined || pesoKg === undefined || repartoPesoDelantero === undefined || cilindradaL === undefined || !incluye(compuestos, ficha.neumaticos) || anchoDelanteroMm === undefined || anchoTraseroMm === undefined || !incluye(tracciones, ficha.traccionOriginal) || !incluye(tracciones, ficha.traccionBuild) || marchas === undefined) return null;
+  if (!nombre || !incluye(clases, ficha.claseBase) || piBase === undefined || !incluye(motores, ficha.motor) || !incluye(aspiraciones, ficha.aspiracion) || potenciaKw === undefined || potenciaCv === undefined || parNm === undefined || pesoKg === undefined || repartoPesoDelantero === undefined || cilindradaL === undefined || !neumaticos || anchoDelanteroMm === undefined || anchoTraseroMm === undefined || !incluye(tracciones, ficha.traccionOriginal) || !incluye(tracciones, ficha.traccionBuild) || marchas === undefined) return null;
   return {
     id: texto(raw.id) || idNuevo(),
     nombre,
@@ -178,12 +204,13 @@ function normalizarCoche(value: unknown): Coche | null {
       piBase,
       motor: ficha.motor,
       aspiracion: ficha.aspiracion,
+      potenciaKw,
       potenciaCv,
       parNm,
       pesoKg,
       repartoPesoDelantero,
       cilindradaL,
-      neumaticos: ficha.neumaticos,
+      neumaticos,
       anchoDelanteroMm,
       anchoTraseroMm,
       traccionOriginal: ficha.traccionOriginal,
@@ -239,14 +266,14 @@ function calcularValor(reglaje: Reglaje, c: Coche): Pick<ReglajeCalculado, 'valo
   const factorUso = uso === 'Rally' ? 0.84 : uso === 'Drift' ? 0.9 : uso === 'Drag' ? 0.95 : uso === 'Sprint' ? 0.98 : 1;
   const baseMuelle = clamp((peso / 10) * factorUso, 70, 190);
   const aeroAlta = estado.clase === 'S2' || estado.clase === 'X' || uso === 'Circuito';
-  const slick = ['Semi-slick', 'Slick', 'Drag'].includes(f.neumaticos);
+  const slick = ['Competición semilisos', 'Competición lisos', 'Aceleración'].includes(f.neumaticos);
 
   switch (reglaje.id) {
     case 'presion-delantera': return { valorCalculado: `${formato(clamp(2.1 + (f.repartoPesoDelantero - 52) * 0.01 + (uso === 'Drag' ? 0.08 : 0) - (uso === 'Rally' ? 0.18 : 0) - (slick ? 0.06 : 0), 1.75, 2.35))} bar`, motivoCalculo: `Ajustado por ${f.repartoPesoDelantero}% de peso delantero, neumático ${f.neumaticos} y uso ${uso}.` };
-    case 'presion-trasera': return { valorCalculado: `${formato(clamp(2.1 + (f.traccionBuild === 'RWD' ? -0.08 : f.traccionBuild === 'FWD' ? 0.04 : -0.03) - (parT > 330 ? 0.06 : 0) - (uso === 'Rally' ? 0.18 : 0) + (uso === 'Drag' ? -0.12 : 0) - (slick ? 0.05 : 0), 1.65, 2.3))} bar`, motivoCalculo: `Ajustado por tracción ${f.traccionBuild}, ${Math.round(parT)} Nm/t y uso ${uso}.` };
+    case 'presion-trasera': return { valorCalculado: `${formato(clamp(2.1 + (f.traccionBuild === 'RWD' ? -0.08 : f.traccionBuild === 'FWD' ? 0.04 : -0.03) - (parT > 330 ? 0.06 : 0) - (uso === 'Rally' ? 0.18 : 0) + (uso === 'Drag' ? -0.12 : 0) - (slick ? 0.05 : 0), 1.65, 2.3))} bar`, motivoCalculo: `Ajustado por tracción ${f.traccionBuild}, ${Math.round(parT)} N·m/t y uso ${uso}.` };
     case 'transmision-final': return { valorCalculado: formato(clamp(3.65 + (rpp > 4.5 ? 0.18 : -0.08) + (uso === 'Drag' || uso === 'Sprint' || problema === 'Poca velocidad punta' ? -0.22 : 0) + (uso === 'Circuito' ? 0.08 : 0), 3.05, 4.25), 2), motivoCalculo: `Calculado con ${formato(rpp, 2)} kg/CV, ${f.marchas} marchas y objetivo ${uso}.` };
     case 'camber-delantero': return { valorCalculado: `${formato(clamp(-1.0 - (aeroAlta ? 0.25 : 0) - (uso === 'Drift' ? 0.4 : 0) + (uso === 'Drag' ? 0.35 : 0), -2.2, -0.4))}°`, motivoCalculo: `Base según apoyo esperado para ${uso} y clase ${estado.clase}.` };
-    case 'camber-trasero': return { valorCalculado: `${formato(clamp(-0.55 - (f.traccionBuild === 'RWD' && parT > 330 ? -0.15 : 0) - (uso === 'Drift' ? 0.25 : 0) + (uso === 'Drag' ? 0.35 : 0), -1.5, -0.1))}°`, motivoCalculo: `Protege tracción trasera con ${Math.round(parT)} Nm/t y uso ${uso}.` };
+    case 'camber-trasero': return { valorCalculado: `${formato(clamp(-0.55 - (f.traccionBuild === 'RWD' && parT > 330 ? -0.15 : 0) - (uso === 'Drift' ? 0.25 : 0) + (uso === 'Drag' ? 0.35 : 0), -1.5, -0.1))}°`, motivoCalculo: `Protege tracción trasera con ${Math.round(parT)} N·m/t y uso ${uso}.` };
     case 'barra-delantera': return { valorCalculado: formato(clamp(50 + f.repartoPesoDelantero * 0.18 + (problema === 'Subviraje' ? -4 : 0) + (problema === 'Sobreviraje' ? 3 : 0) + (uso === 'Rally' ? -8 : 0), 25, 65), 2), motivoCalculo: `Ajustada por reparto ${f.repartoPesoDelantero}/${100 - f.repartoPesoDelantero} y diagnóstico ${problema}.` };
     case 'barra-trasera': return { valorCalculado: formato(clamp(45 + (50 - f.repartoPesoDelantero) * 0.25 + (problema === 'Subviraje' ? 4 : 0) + (problema === 'Sobreviraje' ? -5 : 0) + (uso === 'Rally' ? -8 : 0), 20, 65), 2), motivoCalculo: `Ajustada para rotación según reparto, tracción ${f.traccionBuild} y diagnóstico ${problema}.` };
     case 'muelle-delantero': return { valorCalculado: `${formato(clamp(baseMuelle * pesoDel * 1.85, 75, 180))} kgf/mm`, motivoCalculo: `Calculado desde ${peso} kg, ${f.repartoPesoDelantero}% delante y superficie ${uso}.` };
@@ -258,7 +285,7 @@ function calcularValor(reglaje: Reglaje, c: Coche): Pick<ReglajeCalculado, 'valo
     case 'equilibrio-frenada': return { valorCalculado: `${Math.round(clamp(f.repartoPesoDelantero + 1 + (problema === 'Frenada inestable' ? 2 : 0), 48, 58))}% delante`, motivoCalculo: `Reparto de freno según ${f.repartoPesoDelantero}% de peso delantero.` };
     case 'presion-frenado': return { valorCalculado: `${Math.round(clamp(100 - (peso > 1600 ? 4 : 0) - (problema === 'Frenada inestable' ? 6 : 0) + (uso === 'Circuito' ? 2 : 0), 88, 105))}%`, motivoCalculo: 'Presión modulada por peso, uso y estabilidad de frenada.' };
     case 'diferencial-delantero-acel': return { valorCalculado: `${f.traccionBuild === 'FWD' ? 28 : 14}%`, motivoCalculo: `Bloqueo delantero bajo para limitar subviraje en ${f.traccionBuild}.` };
-    case 'diferencial-trasero-acel': return { valorCalculado: `${Math.round(clamp(18 + (parT > 330 ? -3 : 2) + (uso === 'Drift' ? 18 : 0) + (uso === 'Drag' ? 12 : 0), 10, 55))}%`, motivoCalculo: `Bloqueo trasero según ${Math.round(parT)} Nm/t y uso ${uso}.` };
+    case 'diferencial-trasero-acel': return { valorCalculado: `${Math.round(clamp(18 + (parT > 330 ? -3 : 2) + (uso === 'Drift' ? 18 : 0) + (uso === 'Drag' ? 12 : 0), 10, 55))}%`, motivoCalculo: `Bloqueo trasero según ${Math.round(parT)} N·m/t y uso ${uso}.` };
     case 'diferencial-trasero-decel': return { valorCalculado: `${Math.round(clamp(28 + (problema === 'Frenada inestable' ? 5 : 0) + (uso === 'Drift' ? -8 : 0), 12, 45))}%`, motivoCalculo: 'Deceleración ajustada por estabilidad al levantar/frenar.' };
     case 'diferencial-central': return { valorCalculado: `${Math.round(clamp(62 + (problema === 'Subviraje' ? 8 : 0) - (problema === 'Sobreviraje' ? 4 : 0), 50, 80))}% hacia atrás`, motivoCalculo: `Reparto central para rotación AWD según diagnóstico ${problema}.` };
     default: return { valorCalculado: reglaje.valorRecomendado, motivoCalculo: 'Valor base; afínalo tras una tanda y cambia solo un parámetro cada vez.' };
@@ -269,11 +296,11 @@ function consejos(c: Coche) {
   const f = c.ficha;
   const lista = [...usoConsejos[estado.uso], ...problemaConsejos[estado.problema]];
   if (estado.clase === 'S2' || estado.clase === 'X') lista.unshift('En S2/X, prioriza estabilidad, aero y frenos antes de añadir potencia.');
-  lista.push(`Ficha ${c.nombre}: ${f.pesoKg} kg, ${f.potenciaCv} CV, ${Math.round(parPorTonelada(c))} Nm/t y reparto ${f.repartoPesoDelantero}/${100 - f.repartoPesoDelantero}.`);
+  lista.push(`Ficha ${c.nombre}: ${f.pesoKg} kg, ${potenciaTexto(f)}, ${Math.round(parPorTonelada(c))} N·m/t y reparto ${f.repartoPesoDelantero}/${100 - f.repartoPesoDelantero}.`);
   lista.push(f.traccionBuild === 'AWD' ? 'Como es AWD, usa diferencial delantero/central para corregir subviraje o salida.' : f.traccionBuild === 'FWD' ? 'Como es FWD, evita mucho bloqueo delantero y prioriza entrada limpia.' : 'Como es RWD, trata presión trasera y diferencial de aceleración con cambios pequeños.');
   if (relacionPesoPotencia(c) < 3.6) lista.push('Relación peso/potencia agresiva: no añadas potencia hasta que salida y frenada sean repetibles.');
   if (f.repartoPesoDelantero >= 56) lista.push('Mucho peso delante: ayuda con barra delantera algo más blanda, más caster y reparto AWD hacia atrás si aplica.');
-  if (f.neumaticos === 'Stock' || f.neumaticos === 'Street') lista.push('Neumático limitado: los valores deben ser conservadores; la mejora de compuesto puede valer más que tocar potencia.');
+  if (f.neumaticos === 'Serie' || f.neumaticos === 'Calle') lista.push('Neumático limitado: los valores deben ser conservadores; la mejora de compuesto puede valer más que tocar potencia.');
   lista.push(`Prioridad de mejora: ${f.prioridadMejora || 'pendiente de definir en la ficha del coche.'}`);
   return lista;
 }
@@ -296,15 +323,15 @@ function pantallaPrincipal(c?: Coche) {
   const visibles = reglajesVisibles(c);
   const piezas = [...new Set(visibles.filter((x) => x.puedeAparecerBloqueado).map((x) => x.piezaDesbloqueo).filter(Boolean))] as string[];
   return `<section class="layout-grid"><form class="card control-panel"><div class="section-heading"><p class="eyebrow">Configuración</p><h2>Elige tu objetivo</h2></div>${select('coche', 'Selector de coche', coches.map((x) => [x.id, x.nombre]), estado.cocheId)}${select('clase', 'Clase objetivo', clases.map((x) => [x, x]), estado.clase)}${select('uso', 'Tipo de uso', usos.map((x) => [x, x]), estado.uso)}${select('problema', 'Problema a corregir', problemas.map((x) => [x, x]), estado.problema)}<label><span>Notas personales por build</span><textarea id="notas" rows="5" placeholder="Ej.: probar en circuito urbano, revisar salida de curvas lentas...">${esc(estado.notas)}</textarea></label><div class="button-row"><button class="primary-button" type="button" id="generar">Generar reglaje</button><button class="secondary-button" type="button" id="guardar">Guardar build favorita</button></div></form>
-    <aside class="card summary-card"><div class="section-heading"><p class="eyebrow">Perfil seleccionado</p><h2>${esc(c.nombre)}</h2></div><dl class="spec-list"><div><dt>Tracción build</dt><dd>${c.ficha.traccionBuild}</dd></div><div><dt>Clase base</dt><dd>${c.ficha.claseBase} ${c.ficha.piBase}</dd></div><div><dt>Peso</dt><dd>${c.ficha.pesoKg} kg</dd></div><div><dt>Potencia</dt><dd>${c.ficha.potenciaCv} CV</dd></div></dl><p class="car-note">${esc(c.nota || 'Sin notas generales todavía.')}</p><div class="button-row"><button class="secondary-button" type="button" data-edit="${esc(c.id)}">Editar coche</button><button class="secondary-button" type="button" data-duplicate="${esc(c.id)}">Duplicar coche</button></div><p class="scope-warning">Este MVP usa fichas manuales por coche; no calcula piezas exactas para alcanzar un PI.</p></aside></section>
+    <aside class="card summary-card"><div class="section-heading"><p class="eyebrow">Perfil seleccionado</p><h2>${esc(c.nombre)}</h2></div><dl class="spec-list"><div><dt>Tracción build</dt><dd>${c.ficha.traccionBuild}</dd></div><div><dt>Clase base</dt><dd>${c.ficha.claseBase} ${c.ficha.piBase}</dd></div><div><dt>Peso</dt><dd>${c.ficha.pesoKg} kg</dd></div><div><dt>Potencia</dt><dd>${potenciaTexto(c.ficha)}</dd></div></dl><p class="car-note">${esc(c.nota || 'Sin notas generales todavía.')}</p><div class="button-row"><button class="secondary-button" type="button" data-edit="${esc(c.id)}">Editar coche</button><button class="secondary-button" type="button" data-duplicate="${esc(c.id)}">Duplicar coche</button></div><p class="scope-warning">Este MVP usa fichas manuales por coche; no calcula piezas exactas para alcanzar un PI.</p></aside></section>
     ${fichaTecnica(c)}${estado.generado ? resultados(visibles, piezas, c) : ''}`;
 }
 function select(id: string, label: string, opts: readonly (readonly [string, string])[], val: string) { return `<label><span>${label}</span><select id="${id}">${opts.map(([value, text]) => `<option value="${esc(value)}" ${value === val ? 'selected' : ''}>${esc(text)}</option>`).join('')}</select></label>`; }
 function fichaTecnica(c: Coche) {
   const f = c.ficha;
   const desbloqueos = Object.entries(f.piezasAjustables).filter(([, activo]) => activo).map(([pieza]) => piezasLabels[pieza as keyof PiezasAjustables].toLowerCase());
-  return `<section class="card ficha-card"><div class="section-heading horizontal"><div><p class="eyebrow">Ficha para tunear</p><h2>Datos que usa el generador</h2></div><span class="pill">${formato(relacionPesoPotencia(c), 2)} kg/CV · ${Math.round(parPorTonelada(c))} Nm/t</span></div><div class="ficha-grid">
-    ${dato('Motor', `${f.motor} · ${f.aspiracion} ${formato(f.cilindradaL, 1)} L`)}${dato('Tracción', `Original ${f.traccionOriginal} · Build ${f.traccionBuild}`)}${dato('Reparto peso', `${f.repartoPesoDelantero}% delante / ${100 - f.repartoPesoDelantero}% detrás`)}${dato('Neumáticos', `${f.neumaticos} · ${f.anchoDelanteroMm}/${f.anchoTraseroMm} mm`)}${dato('Caja', `${f.marchas} marchas`)}${dato('Prioridad', f.prioridadMejora || 'Pendiente')}
+  return `<section class="card ficha-card"><div class="section-heading horizontal"><div><p class="eyebrow">Ficha para tunear</p><h2>Datos que usa el generador</h2></div><span class="pill">${formato(relacionPesoPotencia(c), 2)} kg/CV · ${Math.round(parPorTonelada(c))} N·m/t</span></div><div class="ficha-grid">
+    ${dato('Motor', `${f.motor} · ${f.aspiracion} ${formato(f.cilindradaL, 1)} L`)}${dato('Potencia', potenciaTexto(f))}${dato('Tracción', `Original ${f.traccionOriginal} · Build ${f.traccionBuild}`)}${dato('Reparto peso', `${f.repartoPesoDelantero}% delante / ${100 - f.repartoPesoDelantero}% detrás`)}${dato('Neumáticos', `${f.neumaticos} · ${f.anchoDelanteroMm}/${f.anchoTraseroMm} mm`)}${dato('Caja', `${f.marchas} marchas`)}${dato('Prioridad', f.prioridadMejora || 'Pendiente')}
     </div><div class="ficha-notes"><div><h3>Piezas ajustables disponibles</h3><p>${desbloqueos.length ? esc(desbloqueos.join(', ')) : 'Ninguna pieza ajustable marcada todavía.'}</p></div><div><h3>Notas específicas</h3>${f.notasTuneo.length ? `<ul>${f.notasTuneo.map((nota) => `<li>${esc(nota)}</li>`).join('')}</ul>` : '<p>Sin notas específicas todavía.</p>'}</div></div></section>`;
 }
 function dato(label: string, value: string) { return `<article class="ficha-dato"><span>${esc(label)}</span><strong>${esc(value)}</strong></article>`; }
@@ -324,19 +351,19 @@ function gestionarCoches() {
   <section class="card"><div class="section-heading horizontal"><div><p class="eyebrow">Garaje local</p><h2>Coches guardados</h2></div><span class="pill">${coches.length} coche(s)</span></div>${coches.length ? `<div class="car-list">${coches.map(tarjetaCocheGestion).join('')}</div>` : '<p class="empty-state">No hay coches todavía. Añade tu primer coche para generar reglajes.</p>'}</section></section>`;
 }
 function cocheVacio(): Coche {
-  return { id: '', nombre: '', traccion: 'RWD', nota: '', creadoPorUsuario: true, ficha: { claseBase: 'B', piBase: 600, motor: 'Delantero', aspiracion: 'Atmosférico', potenciaCv: 100, parNm: 150, pesoKg: 1200, repartoPesoDelantero: 50, cilindradaL: 2, neumaticos: 'Stock', anchoDelanteroMm: 205, anchoTraseroMm: 205, traccionOriginal: 'RWD', traccionBuild: 'RWD', marchas: 6, piezasAjustables: { ...piezasBase }, prioridadMejora: '', notasTuneo: [] } };
+  return { id: '', nombre: '', traccion: 'RWD', nota: '', creadoPorUsuario: true, ficha: { claseBase: 'B', piBase: 600, motor: 'Delantero', aspiracion: 'Atmosférico', potenciaKw: 74, potenciaCv: 101, parNm: 150, pesoKg: 1200, repartoPesoDelantero: 50, cilindradaL: 2, neumaticos: 'Serie', anchoDelanteroMm: 205, anchoTraseroMm: 205, traccionOriginal: 'RWD', traccionBuild: 'RWD', marchas: 6, piezasAjustables: { ...piezasBase }, prioridadMejora: '', notasTuneo: [] } };
 }
 function formularioCoche(c: Coche, editando: boolean) {
   const f = c.ficha;
   return `<form id="car-form" class="car-form"><input type="hidden" name="id" value="${esc(c.id)}"><div class="form-section"><h3>Datos básicos</h3><div class="form-grid">${input('nombre', 'Nombre del coche', c.nombre, 'text', true)}${selectForm('claseBase', 'Clase base', clases, f.claseBase)}${input('piBase', 'PI base', f.piBase, 'number', true)}${selectForm('traccionOriginal', 'Tracción original', tracciones, f.traccionOriginal)}${selectForm('traccionBuild', 'Tracción del build', tracciones, f.traccionBuild)}</div></div>
-    <div class="form-section"><h3>Motor</h3><div class="form-grid">${selectForm('motor', 'Posición del motor', motores, f.motor)}${selectForm('aspiracion', 'Aspiración', aspiraciones, f.aspiracion)}${input('potenciaCv', 'Potencia en CV', f.potenciaCv, 'number', true)}${input('parNm', 'Par en Nm', f.parNm, 'number', true)}${input('pesoKg', 'Peso en kg', f.pesoKg, 'number', true)}${input('repartoPesoDelantero', 'Reparto de peso delantero en %', f.repartoPesoDelantero, 'number', true)}${input('cilindradaL', 'Cilindrada en litros', f.cilindradaL, 'number', true, '0.1')}</div></div>
+    <div class="form-section"><h3>Motor</h3><div class="form-grid">${selectForm('motor', 'Posición del motor', motores, f.motor)}${selectForm('aspiracion', 'Aspiración', aspiraciones, f.aspiracion)}${input('potenciaKw', 'Potencia en kW', f.potenciaKw, 'number', true)}${input('parNm', 'Par en N·m', f.parNm, 'number', true)}${input('pesoKg', 'Peso en kg', f.pesoKg, 'number', true)}${input('repartoPesoDelantero', 'Reparto de peso delantero en %', f.repartoPesoDelantero, 'number', true)}${input('cilindradaL', 'Cilindrada en litros', f.cilindradaL, 'number', true, '0.1')}</div></div>
     <div class="form-section"><h3>Neumáticos y caja</h3><div class="form-grid">${selectForm('neumaticos', 'Compuesto de neumáticos', compuestos, f.neumaticos)}${input('anchoDelanteroMm', 'Ancho neumático delantero en mm', f.anchoDelanteroMm, 'number', true)}${input('anchoTraseroMm', 'Ancho neumático trasero en mm', f.anchoTraseroMm, 'number', true)}${input('marchas', 'Número de marchas', f.marchas, 'number', true)}</div></div>
     <div class="form-section"><h3>Piezas ajustables disponibles</h3><div class="check-grid">${(Object.keys(piezasLabels) as (keyof PiezasAjustables)[]).map((key) => `<label class="check-label"><input type="checkbox" name="${key}" ${f.piezasAjustables[key] ? 'checked' : ''}> <span>${piezasLabels[key]}</span></label>`).join('')}</div></div>
     <div class="form-section"><h3>Notas</h3>${input('prioridadMejora', 'Prioridad de mejora', f.prioridadMejora, 'text')}<label><span>Notas específicas de tuneo</span><textarea name="notasTuneo" rows="5" placeholder="Una nota por línea">${esc(f.notasTuneo.join('\n'))}</textarea></label><label><span>Resumen visible del coche</span><textarea name="nota" rows="3" placeholder="Ej.: base estable, vigilar salida en curvas lentas...">${esc(c.nota)}</textarea></label></div><div class="button-row"><button class="primary-button" type="submit">${editando ? 'Guardar cambios' : 'Guardar coche'}</button>${editando ? '<button class="secondary-button" type="button" id="cancelar-edicion">Cancelar edición</button>' : ''}</div></form>`;
 }
 function input(name: string, label: string, value: string | number, type = 'text', required = false, step = '1') { return `<label><span>${label}</span><input name="${name}" type="${type}" value="${esc(value)}" ${required ? 'required' : ''} ${type === 'number' ? `step="${step}"` : ''}></label>`; }
 function selectForm<T extends string>(name: string, label: string, opts: readonly T[], value: T) { return `<label><span>${label}</span><select name="${name}">${opts.map((opt) => `<option value="${esc(opt)}" ${opt === value ? 'selected' : ''}>${esc(opt)}</option>`).join('')}</select></label>`; }
-function tarjetaCocheGestion(c: Coche) { return `<article class="car-admin-item"><div><h3>${esc(c.nombre)}</h3><p>${c.ficha.claseBase} ${c.ficha.piBase} · ${c.ficha.traccionBuild} · ${c.ficha.potenciaCv} CV · ${c.ficha.pesoKg} kg</p></div><div class="button-row"><button class="secondary-button" type="button" data-edit="${esc(c.id)}">Editar</button><button class="secondary-button" type="button" data-duplicate="${esc(c.id)}">Duplicar coche</button><button class="ghost-button" type="button" data-delete-car="${esc(c.id)}">Borrar</button></div></article>`; }
+function tarjetaCocheGestion(c: Coche) { return `<article class="car-admin-item"><div><h3>${esc(c.nombre)}</h3><p>${c.ficha.claseBase} ${c.ficha.piBase} · ${c.ficha.traccionBuild} · ${potenciaTexto(c.ficha)} · ${c.ficha.pesoKg} kg</p></div><div class="button-row"><button class="secondary-button" type="button" data-edit="${esc(c.id)}">Editar</button><button class="secondary-button" type="button" data-duplicate="${esc(c.id)}">Duplicar coche</button><button class="ghost-button" type="button" data-delete-car="${esc(c.id)}">Borrar</button></div></article>`; }
 
 function guardarDesdeFormulario(form: HTMLFormElement) {
   const data = new FormData(form);
@@ -346,7 +373,7 @@ function guardarDesdeFormulario(form: HTMLFormElement) {
     nota: data.get('nota'),
     creadoPorUsuario: true,
     ficha: {
-      claseBase: data.get('claseBase'), piBase: data.get('piBase'), motor: data.get('motor'), aspiracion: data.get('aspiracion'), potenciaCv: data.get('potenciaCv'), parNm: data.get('parNm'), pesoKg: data.get('pesoKg'), repartoPesoDelantero: data.get('repartoPesoDelantero'), cilindradaL: data.get('cilindradaL'), neumaticos: data.get('neumaticos'), anchoDelanteroMm: data.get('anchoDelanteroMm'), anchoTraseroMm: data.get('anchoTraseroMm'), traccionOriginal: data.get('traccionOriginal'), traccionBuild: data.get('traccionBuild'), marchas: data.get('marchas'), prioridadMejora: data.get('prioridadMejora'), notasTuneo: texto(data.get('notasTuneo')).split('\n').map((x) => x.trim()).filter(Boolean),
+      claseBase: data.get('claseBase'), piBase: data.get('piBase'), motor: data.get('motor'), aspiracion: data.get('aspiracion'), potenciaKw: data.get('potenciaKw'), parNm: data.get('parNm'), pesoKg: data.get('pesoKg'), repartoPesoDelantero: data.get('repartoPesoDelantero'), cilindradaL: data.get('cilindradaL'), neumaticos: data.get('neumaticos'), anchoDelanteroMm: data.get('anchoDelanteroMm'), anchoTraseroMm: data.get('anchoTraseroMm'), traccionOriginal: data.get('traccionOriginal'), traccionBuild: data.get('traccionBuild'), marchas: data.get('marchas'), prioridadMejora: data.get('prioridadMejora'), notasTuneo: texto(data.get('notasTuneo')).split('\n').map((x) => x.trim()).filter(Boolean),
       piezasAjustables: Object.fromEntries(Object.keys(piezasLabels).map((key) => [key, data.has(key)])),
     },
   });
@@ -388,7 +415,7 @@ function borrarCoche(id: string) {
   render();
 }
 function exportarCoches() {
-  const blob = new Blob([JSON.stringify({ version: 1, coches }, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ version: 2, coches }, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

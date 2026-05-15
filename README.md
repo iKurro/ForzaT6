@@ -74,10 +74,23 @@ La salida de producción usa rutas relativas para los assets (`./assets/...`), p
 La ficha pide estos bloques de datos:
 
 - **Datos básicos:** nombre, clase base, PI base, tracción original y tracción del build.
-- **Motor:** posición, aspiración, potencia en CV, par en Nm, peso en kg, reparto de peso delantero, cilindrada en litros.
+- **Motor:** posición, aspiración, potencia en kW tal como la muestra Forza Horizon 6, par en N·m, peso en kg, reparto de peso delantero y cilindrada en litros. La app convierte automáticamente la potencia a CV para sus cálculos internos.
 - **Neumáticos y caja:** compuesto, ancho delantero, ancho trasero y número de marchas.
 - **Piezas ajustables disponibles:** caja completa, suspensión, barras, diferencial, frenos, aero delantera y aero trasera.
 - **Notas:** prioridad de mejora, notas específicas de tuneo y resumen visible del coche.
+
+
+### Unidades del formulario
+
+Forza Horizon 6 en español muestra la potencia en **kW**, por eso el formulario pide **Potencia en kW**. ForzaT6 guarda esa unidad como dato principal y calcula automáticamente los **CV** con la fórmula `CV = kW * 1.35962` para mantener los cálculos internos de relación peso/potencia. En la ficha del coche se muestran ambas unidades, por ejemplo `134 kW / 182 CV`.
+
+El resto de unidades se introducen directamente tal como se leen en el juego:
+
+- **Par:** N·m.
+- **Peso:** kg.
+- **Cilindrada:** litros.
+
+Los coches guardados con el campo antiguo `potenciaCv` siguen siendo compatibles: si no tienen `potenciaKw`, la app calcula una potencia aproximada con `kW = CV / 1.35962`.
 
 ## Editar, borrar o duplicar coches
 
@@ -94,13 +107,13 @@ En **Gestionar coches** hay dos acciones:
 - **Exportar coches a JSON:** descarga un archivo con todos los coches guardados.
 - **Importar coches desde JSON:** carga un archivo `.json` y sustituye el garaje local por los coches del archivo.
 
-La importación valida la estructura antes de guardar. Si el JSON está mal formado, no contiene una lista de coches o algún coche tiene datos fuera de rango, la app muestra un mensaje de error claro y conserva el estado anterior.
+La importación valida la estructura antes de guardar. Si el JSON está mal formado, no contiene una lista de coches o algún coche tiene datos fuera de rango, la app muestra un mensaje de error claro y conserva el estado anterior. Los JSON antiguos que usen `potenciaCv` y compuestos en inglés se migran al formato actual con `potenciaKw`, `potenciaCv` derivada y nombres de neumáticos en español.
 
 El formato aceptado puede ser:
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "coches": []
 }
 ```
@@ -115,7 +128,7 @@ Para que el generador tenga una base útil, conviene copiar del juego estos dato
 - Clase y PI base del build.
 - Tracción original y tracción final del build.
 - Posición del motor y tipo de aspiración.
-- Potencia, par, peso y reparto de peso delantero.
+- Potencia en kW, par en N·m, peso en kg y reparto de peso delantero.
 - Cilindrada aproximada si aparece en la ficha.
 - Compuesto de neumáticos y anchos delantero/trasero.
 - Número de marchas de la caja instalada.
