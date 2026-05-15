@@ -52,6 +52,12 @@ El resultado se genera en `dist/`.
 npm run preview
 ```
 
+## Despliegue en GitHub Pages
+
+El repositorio incluye un workflow de GitHub Actions que se ejecuta automáticamente al publicar cambios en `main`. El workflow instala dependencias, ejecuta `npm run build`, sube el contenido de `dist/` como artifact de Pages y lo despliega en GitHub Pages.
+
+La salida de producción usa rutas relativas para los assets (`./assets/...`), por lo que funciona correctamente bajo la ruta de proyecto de GitHub Pages, por ejemplo `https://<usuario>.github.io/ForzaT6/`.
+
 ## Notas de alcance
 
 Las piezas se tratan como requisitos o recomendaciones generales para desbloquear ajustes, por ejemplo frenos de competición, caja ajustable completa, diferencial de carreras, suspensión o aero ajustable. La app no decide una combinación exacta de piezas para alcanzar un PI concreto.
