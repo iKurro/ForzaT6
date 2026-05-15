@@ -64,16 +64,9 @@ La app debe incluir:
 9. Añadir notas personales por build
 10. Interfaz completamente en español
 
-## Coches de ejemplo
+## Garaje de usuario
 
-Incluye estos coches iniciales:
-
-- 1989 Nissan Silvia K's
-- Toyota Supra RZ 1998
-- Nissan Skyline GT-R V-Spec 1997
-- Mazda RX-7 1997
-- BMW M3 E46 2005
-- Ford Mustang GT 2018
+La app debe empezar sin coches de ejemplo. Los coches se añaden manualmente desde la interfaz y se guardan en localStorage.
 
 ## Datos de reglajes que debe soportar
 

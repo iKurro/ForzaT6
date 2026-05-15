@@ -501,3 +501,141 @@ dd {
     grid-template-columns: 1fr;
   }
 }
+
+input,
+select,
+textarea {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  border-radius: 18px;
+  background: rgba(2, 6, 23, 0.72);
+  color: var(--text);
+  padding: 14px 16px;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent-2);
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.14);
+}
+
+.empty-panel,
+.management-stack {
+  margin-top: 24px;
+}
+
+.empty-panel {
+  padding: clamp(24px, 4vw, 42px);
+}
+
+.toast {
+  border-radius: 18px;
+  font-weight: 800;
+  margin: 18px 0 0;
+  padding: 14px 18px;
+}
+
+.toast.success {
+  background: rgba(34, 197, 94, 0.14);
+  border: 1px solid rgba(34, 197, 94, 0.36);
+  color: #bbf7d0;
+}
+
+.toast.error {
+  background: rgba(248, 113, 113, 0.14);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  color: #fecaca;
+}
+
+.management-stack,
+.car-form,
+.car-list {
+  display: grid;
+  gap: 24px;
+}
+
+.form-section {
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: rgba(2, 6, 23, 0.28);
+  padding: 20px;
+}
+
+.form-section h3 {
+  color: #e0f2fe;
+  margin-bottom: 18px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.check-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.check-label {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  display: flex;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+}
+
+.check-label input {
+  accent-color: var(--accent);
+  width: auto;
+}
+
+.car-admin-item {
+  align-items: flex-start;
+  background: rgba(2, 6, 23, 0.36);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding: 16px;
+}
+
+.car-admin-item p,
+.missing-favorite p {
+  color: #cbd5e1;
+}
+
+.import-button {
+  cursor: pointer;
+  display: inline-flex;
+  margin: 0;
+  width: auto;
+}
+
+.import-button input {
+  display: none;
+}
+
+.missing-favorite {
+  border-color: rgba(248, 113, 113, 0.45);
+}
+
+@media (max-width: 980px) {
+  .form-grid,
+  .check-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .car-admin-item {
+    flex-direction: column;
+  }
+}
