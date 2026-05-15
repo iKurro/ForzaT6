@@ -10,10 +10,11 @@ Incluye:
 
 - Pantalla principal **ForzaT6 - Tuning Lab**.
 - Selector de coche con seis coches iniciales.
+- Ficha técnica por coche con peso, potencia, par, reparto, neumáticos, tracción del build y piezas ajustables.
 - Selector de clase objetivo: D, C, B, A, S1, S2 y X.
 - Selector de uso: Carretera, Circuito, Sprint, Rally, Drift y Drag.
 - Selector de problema: base, subviraje, sobreviraje, falta de tracción, poca velocidad punta y frenada inestable.
-- Generador de reglaje base por secciones: neumáticos, marchas, alineamiento, barras estabilizadoras, muelles, amortiguación, aerodinámica, freno y diferencial.
+- Generador de reglaje calculado desde la ficha por secciones: neumáticos, marchas, alineamiento, barras estabilizadoras, muelles, amortiguación, aerodinámica, freno y diferencial.
 - Consejos de corrección en español según uso, clase, tracción y problema.
 - Advertencias de ajustes que pueden estar bloqueados y piezas que suelen desbloquearlos.
 - Guardado de builds favoritas y notas personales con `localStorage`.
@@ -57,6 +58,12 @@ npm run preview
 El repositorio incluye un workflow de GitHub Actions que se ejecuta automáticamente al publicar cambios en `main`. El workflow instala dependencias, ejecuta `npm run build`, sube el contenido de `dist/` como artifact de Pages y lo despliega en GitHub Pages.
 
 La salida de producción usa rutas relativas para los assets (`./assets/...`), por lo que funciona correctamente bajo la ruta de proyecto de GitHub Pages, por ejemplo `https://<usuario>.github.io/ForzaT6/`.
+
+## Añadir coches nuevos
+
+Para añadir coches, edita el array `coches` en `src/main.ts` y crea una entrada con su `ficha`: clase/PI base, posición de motor, aspiración, potencia, par, peso, reparto de peso, neumáticos, anchuras, tracción original, tracción del build, marchas y piezas ajustables instaladas.
+
+La guía completa y una plantilla copiables están en `docs/ficha-coche.md`.
 
 ## Notas de alcance
 
