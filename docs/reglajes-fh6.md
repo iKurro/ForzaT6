@@ -1,11 +1,11 @@
 # Reglajes detectados en Forza Horizon 6
 
 Fuente: capturas del usuario tomadas en el menú de tuneo de Forza Horizon 6.
-Coche usado como ejemplo: 1989 Nissan Silvia K's, clase B 600.
+Coche usado como referencia de captura: ficha manual de usuario en clase B 600.
 
 ## Datos visibles del coche de ejemplo
 
-- Coche: 1989 Nissan Silvia K's
+- Coche: ficha manual de usuario
 - Clase: B 600
 - Distancia de frenado 97 km/h - 0: 35,0 m
 - Distancia de frenado 161 km/h - 0: 84,1 m
